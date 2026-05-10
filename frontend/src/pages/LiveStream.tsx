@@ -1,19 +1,37 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { getMessages, sendMessage, getDonations } from '../services/api'
+
+const STREAM_ID = '00000000-0000-0000-0000-000000000001'
+const USER_ID = '00000000-0000-0000-0000-000000000002'
 
 const LiveStream = () => {
   const [message, setMessage] = useState('')
-  const [messages, setMessages] = useState([
-    { user: 'Roseta', text: 'Só quem viveu isso vai saber como é sentir essa energia 🔥🔥🔥', color: '#FF6B6B' },
-    { user: 'Verdinho420', text: 'pog champ ❤️❤️❤️', color: '#51CF66' },
-    { user: 'Azulado', text: 'aaaaaaaaaaaaaaaaaaa', color: '#339AF0' },
-    { user: 'Laranjinha', text: 'VO CHORA 😂😂😂😂', color: '#FF922B' },
-    { user: 'Big_RED', text: 'Mds n acredito 🤯🤯🤯', color: '#FF6B6B' },
-  ])
+  const [messages, setMessages] = useState<any[]>([])
+  const [donations, setDonations] = useState<any[]>([])
 
-  const sendMessage = () => {
+  const colors = ['#FF6B6B', '#51CF66', '#339AF0', '#FF922B', '#FFD700', '#CC5DE8']
+  const getColor = (name: string) => colors[name.charCodeAt(0) % colors.length]
+
+  useEffect(() => {
+    fetchMessages()
+    fetchDonations()
+  }, [])
+
+  const fetchMessages = async () => {
+    const data = await getMessages(STREAM_ID)
+    if (Array.isArray(data)) setMessages(data)
+  }
+
+  const fetchDonations = async () => {
+    const data = await getDonations(STREAM_ID)
+    if (Array.isArray(data)) setDonations(data)
+  }
+
+  const handleSend = async () => {
     if (!message.trim()) return
-    setMessages([...messages, { user: 'Você', text: message, color: '#FFD700' }])
+    await sendMessage(STREAM_ID, USER_ID, message)
     setMessage('')
+    fetchMessages()
   }
 
   return (
@@ -34,10 +52,8 @@ const LiveStream = () => {
 
       <div className="flex gap-4 p-6">
 
-        {/* Coluna esquerda - Player + Atalhos */}
+        {/* Coluna esquerda */}
         <div className="flex flex-col gap-4 w-1/3">
-          
-          {/* Player */}
           <div className="bg-[#1A1A1A] rounded-xl p-4">
             <div className="w-full h-48 bg-[#2A2A2A] rounded-lg flex flex-col items-center justify-center text-[#A0A0A0] mb-4">
               <span className="text-4xl mb-2">📷</span>
@@ -52,45 +68,39 @@ const LiveStream = () => {
             </div>
           </div>
 
-          {/* Atalhos rápidos */}
           <div className="bg-[#1A1A1A] rounded-xl p-4">
             <h3 className="font-bold mb-3">Atalhos rápidos</h3>
             <div className="grid grid-cols-2 gap-2">
-              {[
-                { icon: '✏️', label: 'Editar' },
-                { icon: '❤️', label: 'Favoritar' },
-                { icon: '⭐', label: 'Destacar' },
-                { icon: '😎', label: 'Mood' },
-                { icon: '⏱️', label: 'Timer' },
-                { icon: '➕', label: 'Adicionar' },
-              ].map((item, i) => (
-                <button
-                  key={i}
-                  className="bg-[#2A2A1A] border border-[#FFD700] text-[#FFD700] py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-[#FFD700] hover:text-black transition-all"
-                >
-                  {item.icon}
+              {['✏️', '❤️', '⭐', '😎', '⏱️', '➕'].map((icon, i) => (
+                <button key={i} className="bg-[#2A2A1A] border border-[#FFD700] text-[#FFD700] py-3 rounded-lg flex items-center justify-center hover:bg-[#FFD700] hover:text-black transition-all">
+                  {icon}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Botão iniciar live */}
           <button className="w-full bg-[#FFD700] text-black font-bold py-4 rounded-full text-lg hover:opacity-90 transition-all">
             ▶ Iniciar live
           </button>
         </div>
 
-        {/* Coluna central - Chat */}
+        {/* Chat */}
         <div className="flex flex-col w-1/3 bg-[#1A1A1A] rounded-xl p-4">
           <h3 className="font-bold text-center mb-4 border-b border-[#2A2A2A] pb-2">Chat</h3>
-          
+
           <div className="flex-1 overflow-y-auto flex flex-col gap-2 mb-4 max-h-96">
-            {messages.map((msg, i) => (
-              <div key={i} className="text-sm">
-                <span style={{ color: msg.color }} className="font-bold">{msg.user}: </span>
-                <span className="text-[#E0E0E0]">{msg.text}</span>
-              </div>
-            ))}
+            {messages.length === 0 ? (
+              <p className="text-[#A0A0A0] text-sm text-center">Nenhuma mensagem ainda. Seja o primeiro!</p>
+            ) : (
+              messages.map((msg, i) => (
+                <div key={i} className="text-sm">
+                  <span style={{ color: getColor(msg.users?.name || 'user') }} className="font-bold">
+                    {msg.users?.name || 'Usuário'}:{' '}
+                  </span>
+                  <span className="text-[#E0E0E0]">{msg.content}</span>
+                </div>
+              ))
+            )}
           </div>
 
           <div className="flex items-center gap-2 border-t border-[#2A2A2A] pt-3">
@@ -100,75 +110,55 @@ const LiveStream = () => {
               placeholder="Envie uma mensagem"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               className="flex-1 bg-transparent outline-none text-sm text-white placeholder-[#A0A0A0]"
             />
-            <span className="text-[#A0A0A0]">300</span>
-            <button
-              onClick={sendMessage}
-              className="bg-[#FFD700] text-black font-bold px-4 py-1 rounded-full text-sm"
-            >
+            <button onClick={handleSend} className="bg-[#FFD700] text-black font-bold px-4 py-1 rounded-full text-sm">
               Chat
             </button>
           </div>
         </div>
 
-        {/* Coluna direita - Donates + Activities */}
+        {/* Donates + Activities */}
         <div className="flex flex-col gap-4 w-1/3">
-          
-          {/* Donates */}
           <div className="bg-[#1A1A1A] rounded-xl p-4">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold">Donates</h3>
               <button className="text-[#A0A0A0]">⚙️</button>
             </div>
-            {[1, 2, 3, 4].map((_, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-[#2A2A2A] text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#FFD700]">💰</span>
-                  <div>
-                    <p className="font-bold">R$10,00</p>
-                    <p className="text-[#A0A0A0] text-xs">joso_design</p>
+            {donations.length === 0 ? (
+              <p className="text-[#A0A0A0] text-sm">Nenhum donate ainda.</p>
+            ) : (
+              donations.map((don, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-[#2A2A2A] text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#FFD700]">💰</span>
+                    <div>
+                      <p className="font-bold">R${don.amount}</p>
+                      <p className="text-[#A0A0A0] text-xs">{don.users?.name || 'Anônimo'}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button className="text-xs border border-[#A0A0A0] px-2 py-0.5 rounded text-[#A0A0A0]">see donate</button>
-                  <span className="text-[#A0A0A0] text-xs">47 min atrás</span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
-          {/* Activities feed */}
           <div className="bg-[#1A1A1A] rounded-xl p-4">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold">Activities feed</h3>
               <button className="text-[#A0A0A0]">⚙️</button>
             </div>
-            {[1, 2, 3, 4].map((_, i) => (
-              <div key={i} className="flex items-center gap-2 py-2 border-b border-[#2A2A2A] text-sm">
-                <span className="text-[#FFD700]">⭐</span>
-                <div>
-                  <span className="font-bold">joso_design </span>
-                  <span className="text-[#A0A0A0]">se tornou inscrito no canal!</span>
-                </div>
-                <span className="text-[#A0A0A0] text-xs ml-auto">47 min atrás</span>
-              </div>
-            ))}
+            <p className="text-[#A0A0A0] text-sm">Nenhuma atividade recente.</p>
           </div>
 
-          {/* Ad Management */}
           <div className="bg-[#1A1A1A] rounded-xl p-4 flex justify-between items-center">
-            <div className="flex justify-between items-center w-full mb-0">
-              <h3 className="font-bold">Ad Management</h3>
-              <button className="text-[#A0A0A0]">⚙️</button>
-            </div>
-            <button className="bg-[#FFD700] text-black font-bold px-4 py-2 rounded-full text-sm whitespace-nowrap ml-4">
+            <h3 className="font-bold">Ad Management</h3>
+            <button className="bg-[#FFD700] text-black font-bold px-4 py-2 rounded-full text-sm">
               Run Ad (0:30)
             </button>
           </div>
-
         </div>
+
       </div>
     </div>
   )
