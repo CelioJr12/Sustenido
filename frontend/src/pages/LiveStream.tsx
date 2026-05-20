@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { getMessages, sendMessage, getDonations } from '../services/api'
+import { supabase } from '../services/supabase'
 
 const STREAM_ID = '00000000-0000-0000-0000-000000000001'
-const USER_ID = '00000000-0000-0000-0000-000000000002'
 
 const LiveStream = () => {
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<any[]>([])
   const [donations, setDonations] = useState<any[]>([])
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   const [isLiveModalOpen, setIsLiveModalOpen] = useState(false)
   const [liveTitle, setLiveTitle] = useState('')
@@ -20,6 +21,11 @@ const LiveStream = () => {
   const getColor = (name: string) => colors[name.charCodeAt(0) % colors.length]
 
   useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setCurrentUser(user)
+    }
+    fetchUser()
     fetchMessages()
     fetchDonations()
   }, [])
@@ -35,8 +41,8 @@ const LiveStream = () => {
   }
 
   const handleSend = async () => {
-    if (!message.trim()) return
-    await sendMessage(STREAM_ID, USER_ID, message)
+    if (!message.trim() || !currentUser) return
+    await sendMessage(STREAM_ID, currentUser.id, message)
     setMessage('')
     fetchMessages()
   }
