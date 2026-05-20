@@ -75,7 +75,7 @@ const LiveStream = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-[#0D0D0D] text-white ${isFullscreen ? 'h-screen overflow-hidden' : ''}`}>
+    <div className="h-screen bg-[#0D0D0D] text-white flex flex-col overflow-hidden">
       {/* Header (oculto em tela cheia) */}
       {!isFullscreen && (
         <header className="flex items-center justify-between px-6 py-4 bg-[#1A1A1A] border-b border-[#2A2A2A]">
@@ -92,15 +92,15 @@ const LiveStream = () => {
       )}
 
       {/* Container Principal */}
-      <div className={isFullscreen ? "flex h-screen w-full" : "flex gap-6 p-6 max-w-[1600px] mx-auto"}>
+      <div className={isFullscreen ? "flex-1 flex w-full min-h-0" : "flex-1 flex flex-col lg:flex-row gap-4 p-4 lg:p-6 max-w-[1600px] w-full mx-auto min-h-0"}>
         
         {/* Coluna Esquerda: Câmera + Controles */}
-        <div className={isFullscreen ? "flex-1 relative bg-black flex flex-col" : "flex flex-col gap-4 w-[65%]"}>
+        <div className={isFullscreen ? "flex-1 relative bg-black flex flex-col min-w-0" : "flex flex-col gap-4 w-full lg:w-[70%] min-w-0"}>
           
           {/* Container do Vídeo */}
           <div className={isFullscreen 
             ? "flex-1 relative flex items-center justify-center bg-black overflow-hidden" 
-            : "w-full aspect-video bg-[#2A2A2A] rounded-xl flex flex-col items-center justify-center text-[#A0A0A0] relative overflow-hidden shadow-lg"
+            : "w-full flex-1 min-h-0 bg-[#2A2A2A] rounded-xl flex flex-col items-center justify-center text-[#A0A0A0] relative overflow-hidden shadow-lg"
           }>
             <div className="flex flex-col items-center justify-center h-full w-full" style={{ display: isCameraOn ? 'none' : 'flex' }}>
               <span className="text-5xl mb-4">📷</span>
@@ -142,24 +142,24 @@ const LiveStream = () => {
 
           {/* Grid Inferior: Botão Iniciar Live/Encerrar + Atalhos + Outros Painéis */}
           {!isFullscreen && (
-            <div className="flex flex-col gap-4 mt-2">
+            <div className="flex flex-col gap-4 mt-2 overflow-y-auto pr-2 pb-2">
               {!isCameraOn ? (
                 <button 
                   onClick={() => setIsLiveModalOpen(true)}
-                  className="w-full bg-[#FFD700] text-black font-bold py-4 rounded-xl text-xl hover:bg-[#E6C200] transition-all shadow-md"
+                  className="w-full shrink-0 bg-[#FFD700] text-black font-bold py-3 rounded-xl text-lg hover:bg-[#E6C200] transition-all shadow-md"
                 >
                   ▶ Iniciar live
                 </button>
               ) : (
                 <button 
                   onClick={handleEndLive}
-                  className="w-full bg-[#FF4444] text-white font-bold py-4 rounded-xl text-xl hover:bg-[#CC0000] transition-all shadow-md"
+                  className="w-full shrink-0 bg-[#FF4444] text-white font-bold py-3 rounded-xl text-lg hover:bg-[#CC0000] transition-all shadow-md"
                 >
                   ⏹ Encerrar live
                 </button>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {/* Esquerda: Atalhos e Ads */}
                 <div className="flex flex-col gap-4">
                   <div className="bg-[#1A1A1A] rounded-xl p-5 border border-[#2A2A2A]">
@@ -221,8 +221,8 @@ const LiveStream = () => {
         </div>
 
         {/* Coluna Direita: Chat */}
-        <div className={isFullscreen ? "w-[350px] bg-[#1A1A1A] flex flex-col border-l border-[#2A2A2A]" : "flex flex-col w-[35%] bg-[#1A1A1A] rounded-xl p-5 border border-[#2A2A2A]"}>
-          <div className={isFullscreen ? "p-4 border-b border-[#2A2A2A] flex justify-between items-center" : "mb-4 border-b border-[#2A2A2A] pb-3"}>
+        <div className={isFullscreen ? "w-[350px] bg-[#1A1A1A] flex flex-col border-l border-[#2A2A2A] shrink-0" : "flex flex-col w-full lg:w-[30%] bg-[#1A1A1A] rounded-xl p-4 border border-[#2A2A2A] shrink-0 min-h-[300px]"}>
+          <div className={isFullscreen ? "p-4 border-b border-[#2A2A2A] flex justify-between items-center shrink-0" : "mb-4 border-b border-[#2A2A2A] pb-3 shrink-0"}>
             <h3 className="font-bold text-lg flex-1 text-center">Chat</h3>
           </div>
 
@@ -241,7 +241,7 @@ const LiveStream = () => {
             )}
           </div>
 
-          <div className={isFullscreen ? "p-4 bg-[#2A2A2A]" : "pt-3 border-t border-[#2A2A2A]"}>
+          <div className={isFullscreen ? "p-4 bg-[#2A2A2A] shrink-0" : "pt-3 border-t border-[#2A2A2A] shrink-0"}>
             <div className="flex items-center gap-2 bg-[#2A2A2A] p-1.5 rounded-xl border border-[#3A3A3A] focus-within:border-[#FFD700] transition-colors">
               <input
                 type="text"
