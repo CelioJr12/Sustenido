@@ -1,25 +1,43 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
-import { getArtistProfile, getActiveStreams } from '../services/api'
+import { getActiveStreams } from '../services/api'
 
-const ArtistProfile = () => {
-  const [artist, setArtist] = useState<any>(null)
+const Home = () => {
   const [activeStreams, setActiveStreams] = useState<any[]>([])
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [currentUserName, setCurrentUserName] = useState('')
-  const [isArtist, setIsArtist] = useState(false)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchData()
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { navigate('/'); return }
+      if (user.user_metadata?.is_artist) { navigate('/live'); return }
+
+      setCurrentUser(user)
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', user.id)
+        .single()
+      setCurrentUserName(userData?.name || user.user_metadata?.name || 'Ouvinte')
+
+      await fetchActiveStreams()
+      setLoading(false)
+    }
+    init()
   }, [])
 
+  // Atualiza a lista em tempo real via Supabase Realtime + polling de backup a cada 5s
   useEffect(() => {
     const channel = supabase
-      .channel('perfil-streams')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'streams' }, fetchActiveStreams)
+      .channel('home-streams')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'streams' }, async () => {
+        await fetchActiveStreams()
+      })
       .subscribe()
 
     const interval = setInterval(fetchActiveStreams, 5000)
@@ -35,44 +53,9 @@ const ArtistProfile = () => {
     if (Array.isArray(data)) setActiveStreams(data)
   }
 
-  const fetchData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      navigate('/')
-      return
-    }
-
-    setCurrentUser(user)
-    const artistFlag = !!user.user_metadata?.is_artist
-    setIsArtist(artistFlag)
-
-    const { data: userData } = await supabase
-      .from('users')
-      .select('name')
-      .eq('id', user.id)
-      .single()
-    setCurrentUserName(userData?.name || user.user_metadata?.name || 'Usuário')
-
-    if (artistFlag) {
-      const profileData = await getArtistProfile(user.id)
-      setArtist(profileData)
-    }
-
-    await fetchActiveStreams()
-    setLoading(false)
-  }
-
   const handleLogout = async () => {
     await supabase.auth.signOut()
     navigate('/')
-  }
-
-  const formatFollowers = (count: number) => {
-    if (!count) return '0'
-    if (count >= 1000000) return `${(count / 1000000).toFixed(1)} mi`
-    if (count >= 1000) return `${(count / 1000).toFixed(1)} mil`
-    return count.toString()
   }
 
   if (loading) {
@@ -104,25 +87,6 @@ const ArtistProfile = () => {
       </header>
 
       <div className="px-8 py-6">
-
-        {isArtist && artist && (
-          <div className="flex items-center gap-6 mb-8 bg-[#1A1A1A] p-5 rounded-xl border border-[#2A2A2A]">
-            <div className="w-20 h-20 rounded-full bg-[#2A2A2A] border-4 border-red-500 flex items-center justify-center text-3xl font-bold shrink-0">
-              {artist?.name?.charAt(0).toUpperCase() || 'A'}
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-bold">{artist?.name || 'Artista'}</h2>
-              <p className="text-[#A0A0A0] text-sm">{formatFollowers(artist?.followers_count)} seguidores</p>
-            </div>
-            <button
-              onClick={() => navigate('/live')}
-              className="bg-[#FFD700] text-black font-bold px-6 py-3 rounded-full hover:opacity-90 transition-all"
-            >
-              🎙 Ir para sua live
-            </button>
-          </div>
-        )}
-
         <div className="flex items-center gap-3 mb-6">
           <h2 className="text-2xl font-bold">Lives ao vivo</h2>
           {activeStreams.length > 0 && (
@@ -162,10 +126,9 @@ const ArtistProfile = () => {
             ))}
           </div>
         )}
-
       </div>
     </div>
   )
 }
 
-export default ArtistProfile
+export default Home

@@ -1,5 +1,32 @@
 const API_URL = 'http://localhost:3000'
 
+// ── Lives ───────────────────────────────────
+export const getActiveStreams = async () => {
+  const response = await fetch(`${API_URL}/streams/active`)
+  return response.json()
+}
+
+export const getStream = async (streamId: string) => {
+  const response = await fetch(`${API_URL}/streams/${streamId}`)
+  return response.json()
+}
+
+export const startLive = async (artist_id: string, title: string, description: string) => {
+  const response = await fetch(`${API_URL}/streams/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ artist_id, title, description })
+  })
+  return response.json()
+}
+
+export const endLive = async (streamId: string) => {
+  const response = await fetch(`${API_URL}/streams/${streamId}/end`, {
+    method: 'POST'
+  })
+  return response.json()
+}
+
 // ── Mensagens ──────────────────────────────
 export const getMessages = async (streamId: string) => {
   const response = await fetch(`${API_URL}/streams/${streamId}/messages`)

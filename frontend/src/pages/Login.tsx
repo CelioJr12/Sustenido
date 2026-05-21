@@ -29,6 +29,7 @@ const Login = () => {
       return
     }
 
+    const { data: { user } } = await supabase.auth.getUser()
     setLoading(false)
     navigate('/perfil')
   }
