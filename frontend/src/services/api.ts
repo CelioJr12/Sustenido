@@ -1,9 +1,24 @@
 const API_URL = 'http://localhost:3000'
+const REQUEST_TIMEOUT_MS = 3500
+
+const fetchJson = async (url: string, options?: RequestInit) => {
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    })
+    return response.json()
+  } finally {
+    window.clearTimeout(timeoutId)
+  }
+}
 
 // ── Lives ───────────────────────────────────
 export const getActiveStreams = async () => {
-  const response = await fetch(`${API_URL}/streams/active`)
-  return response.json()
+  return fetchJson(`${API_URL}/streams/active`)
 }
 
 export const getStream = async (streamId: string) => {
@@ -49,8 +64,7 @@ export const getDonations = async (streamId: string) => {
 
 // ── Perfil ──────────────────────────────────
 export const getArtistProfile = async (userId: string) => {
-  const response = await fetch(`${API_URL}/users/${userId}`)
-  return response.json()
+  return fetchJson(`${API_URL}/users/${userId}`)
 }
 
 export const getArtistStreams = async (userId: string) => {

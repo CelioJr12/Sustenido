@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { getArtistProfile, getActiveStreams } from '../services/api'
+import { mockLiveStreams } from '../mocks/live'
 
 const ArtistProfile = () => {
   const [artist, setArtist] = useState<any>(null)
   const [activeStreams, setActiveStreams] = useState<any[]>([])
-  const [currentUser, setCurrentUser] = useState<any>(null)
   const [currentUserName, setCurrentUserName] = useState('')
   const [isArtist, setIsArtist] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -31,19 +31,23 @@ const ArtistProfile = () => {
   }, [])
 
   const fetchActiveStreams = async () => {
-    const data = await getActiveStreams()
-    if (Array.isArray(data)) setActiveStreams(data)
+    try {
+      const data = await getActiveStreams()
+      setActiveStreams(Array.isArray(data) && data.length > 0 ? data : mockLiveStreams)
+    } catch {
+      setActiveStreams(mockLiveStreams)
+    }
   }
 
   const fetchData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
       navigate('/')
       return
     }
 
-    setCurrentUser(user)
     const artistFlag = !!user.user_metadata?.is_artist
     setIsArtist(artistFlag)
 
@@ -52,15 +56,22 @@ const ArtistProfile = () => {
       .select('name')
       .eq('id', user.id)
       .single()
-    setCurrentUserName(userData?.name || user.user_metadata?.name || 'Usuário')
+    const displayName = userData?.name || user.user_metadata?.name || 'Artista'
+    setCurrentUserName(displayName)
 
     if (artistFlag) {
-      const profileData = await getArtistProfile(user.id)
-      setArtist(profileData)
+      try {
+        const profileData = await getArtistProfile(user.id)
+        setArtist(profileData?.error ? { name: displayName, followers_count: 0 } : profileData)
+      } catch {
+        setArtist({ name: displayName, followers_count: 0 })
+      }
     }
 
-    await fetchActiveStreams()
-    setLoading(false)
+      await fetchActiveStreams()
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLogout = async () => {
@@ -115,6 +126,12 @@ const ArtistProfile = () => {
               <p className="text-[#A0A0A0] text-sm">{formatFollowers(artist?.followers_count)} seguidores</p>
             </div>
             <button
+              onClick={() => navigate('/dashboard')}
+              className="bg-[#2A2A2A] text-white font-bold px-5 py-3 rounded-full hover:bg-[#3A3A3A] transition-all"
+            >
+              Dashboard
+            </button>
+            <button
               onClick={() => navigate('/live')}
               className="bg-[#FFD700] text-black font-bold px-6 py-3 rounded-full hover:opacity-90 transition-all"
             >
@@ -157,6 +174,9 @@ const ArtistProfile = () => {
                 <div className="p-3">
                   <p className="font-bold text-sm truncate">{stream.title}</p>
                   <p className="text-[#A0A0A0] text-xs mt-0.5">{stream.users?.name || 'Artista'}</p>
+                  {stream.viewers_count && (
+                    <p className="text-[#FFD700] text-xs mt-2">{stream.viewers_count} assistindo agora</p>
+                  )}
                 </div>
               </div>
             ))}

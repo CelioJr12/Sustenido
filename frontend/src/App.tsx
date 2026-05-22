@@ -4,6 +4,7 @@ import LiveStream from './pages/LiveStream'
 import Login from './pages/Login'
 import Cadastro from './pages/Cadastro'
 import WatchLive from './pages/WatchLive'
+import Dashboard from './pages/Dashboard'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/perfil" element={<ArtistProfile />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/live" element={<LiveStream />} />
         <Route path="/watch/:streamId" element={<WatchLive />} />
       </Routes>

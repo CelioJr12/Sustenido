@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { sendMessage, getStream } from '../services/api'
 import { supabase } from '../services/supabase'
+import { getMockLiveStream, mockLiveMessages } from '../mocks/live'
 
 const WatchLive = () => {
   const { streamId } = useParams<{ streamId: string }>()
@@ -22,17 +23,33 @@ const WatchLive = () => {
 
   useEffect(() => {
     const init = async () => {
+      const isMockStream = streamId?.startsWith('mock-live')
+
+      if (isMockStream) {
+        setCurrentUser({ id: 'mock-viewer' })
+        setCurrentUserName('Visitante demo')
+        setStream(getMockLiveStream(streamId))
+        setMessages(mockLiveMessages)
+        setLoading(false)
+        return
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
+
       if (!user) { navigate('/'); return }
 
-      setCurrentUser(user)
+      setCurrentUser(user || { id: 'mock-viewer' })
 
-      const { data: userData } = await supabase
-        .from('users')
-        .select('name')
-        .eq('id', user.id)
-        .single()
-      setCurrentUserName(userData?.name || user.user_metadata?.name || 'Ouvinte')
+      if (user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', user.id)
+          .single()
+        setCurrentUserName(userData?.name || user.user_metadata?.name || 'Ouvinte')
+      } else {
+        setCurrentUserName('Visitante demo')
+      }
 
       if (!streamId) { navigate('/perfil'); return }
 
@@ -50,7 +67,7 @@ const WatchLive = () => {
 
   // Canal de chat em tempo real
   useEffect(() => {
-    if (!streamId) return
+    if (!streamId || streamId.startsWith('mock-live')) return
 
     const channel = supabase.channel(`live-${streamId}`, {
       config: { broadcast: { self: false } }
@@ -79,6 +96,7 @@ const WatchLive = () => {
 
   const handleSend = async () => {
     if (!message.trim() || !currentUser || !streamId) return
+    const isMockStream = streamId.startsWith('mock-live')
 
     const msg = {
       user_id: currentUser.id,
@@ -96,7 +114,9 @@ const WatchLive = () => {
       payload: msg
     })
 
-    await sendMessage(streamId, currentUser.id, message)
+    if (!isMockStream) {
+      await sendMessage(streamId, currentUser.id, message)
+    }
   }
 
   if (loading) {
@@ -149,7 +169,10 @@ const WatchLive = () => {
         <div className="flex flex-col gap-4 w-full lg:w-[70%] min-w-0">
           <div className="w-full flex-1 min-h-0 bg-[#111111] rounded-xl flex flex-col items-center justify-center relative overflow-hidden shadow-lg border border-[#2A2A2A]">
             <div className="flex flex-col items-center gap-4 text-center px-6">
-              <div className="w-24 h-24 rounded-full bg-[#2A2A2A] border-4 border-red-500 flex items-center justify-center text-4xl font-bold text-white">
+              <div
+                className="w-24 h-24 rounded-full bg-[#2A2A2A] border-4 border-red-500 flex items-center justify-center text-4xl font-bold text-white"
+                style={{ backgroundColor: stream?.users?.avatar_color || undefined }}
+              >
                 {stream?.users?.name?.charAt(0).toUpperCase() || '🎤'}
               </div>
               <div>
@@ -166,6 +189,11 @@ const WatchLive = () => {
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
               AO VIVO
             </div>
+            {stream?.viewers_count && (
+              <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-3 py-1 rounded-full font-bold">
+                {stream.viewers_count} assistindo
+              </div>
+            )}
           </div>
 
           <div className="bg-[#1A1A1A] rounded-xl p-4 border border-[#2A2A2A]">
@@ -173,7 +201,11 @@ const WatchLive = () => {
             {stream?.description && (
               <p className="text-[#A0A0A0] text-sm mt-1">{stream.description}</p>
             )}
-            <p className="text-[#A0A0A0] text-xs mt-2">por {stream?.users?.name || 'Artista'}</p>
+            <div className="flex flex-wrap gap-2 mt-3 text-xs">
+              <span className="text-[#A0A0A0]">por {stream?.users?.name || 'Artista'}</span>
+              {stream?.category && <span className="text-[#FFD700]">#{stream.category}</span>}
+              {stream?.peak_viewers && <span className="text-[#A0A0A0]">pico de {stream.peak_viewers}</span>}
+            </div>
           </div>
         </div>
 

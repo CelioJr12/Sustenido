@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { sendMessage, getDonations, startLive, endLive } from '../services/api'
+import { sendMessage, startLive, endLive } from '../services/api'
 import { supabase } from '../services/supabase'
+import { mockLiveActivities, mockLiveDonations, mockLiveMessages } from '../mocks/live'
 
 const LiveStream = () => {
   const [message, setMessage] = useState('')
@@ -17,6 +18,7 @@ const LiveStream = () => {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentStreamId, setCurrentStreamId] = useState<string | null>(null)
   const [streamTitle, setStreamTitle] = useState('')
+  const [activities, setActivities] = useState<string[]>([])
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const channelRef = useRef<any>(null)
@@ -108,6 +110,9 @@ const LiveStream = () => {
 
       setCurrentStreamId(stream.id)
       setStreamTitle(liveTitle)
+      setMessages(mockLiveMessages)
+      setDonations(mockLiveDonations)
+      setActivities(mockLiveActivities)
 
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       if (videoRef.current) {
@@ -140,6 +145,8 @@ const LiveStream = () => {
 
     setIsCameraOn(false)
     setMessages([])
+    setDonations([])
+    setActivities([])
   }
 
   const handleToggleFullscreen = () => setIsFullscreen(!isFullscreen)
@@ -287,7 +294,17 @@ const LiveStream = () => {
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="font-bold text-lg">Activities feed</h3>
                     </div>
-                    <p className="text-[#A0A0A0] text-sm italic">Nenhuma atividade recente.</p>
+                    {activities.length === 0 ? (
+                      <p className="text-[#A0A0A0] text-sm italic">Nenhuma atividade recente.</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {activities.map((activity) => (
+                          <p key={activity} className="text-[#A0A0A0] text-sm border-b border-[#2A2A2A] pb-2 last:border-b-0 last:pb-0">
+                            {activity}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

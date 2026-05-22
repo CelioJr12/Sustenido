@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 
@@ -29,7 +29,6 @@ const Login = () => {
       return
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
     setLoading(false)
     navigate('/perfil')
   }

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { getActiveStreams } from '../services/api'
 
 const Home = () => {
   const [activeStreams, setActiveStreams] = useState<any[]>([])
-  const [currentUser, setCurrentUser] = useState<any>(null)
   const [currentUserName, setCurrentUserName] = useState('')
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
@@ -15,8 +14,6 @@ const Home = () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { navigate('/'); return }
       if (user.user_metadata?.is_artist) { navigate('/live'); return }
-
-      setCurrentUser(user)
 
       const { data: userData } = await supabase
         .from('users')
